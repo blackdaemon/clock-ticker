@@ -17,3 +17,5 @@ __pycache__/
 *.swo
 *~
 .DS_Store
+
+/personal_modules/
