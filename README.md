@@ -408,8 +408,9 @@ repository metadata can take time.**
 
 ### `codex_usage.sh`
 
-Shows the remaining Codex usage allowance and the time until it resets. It
-requires an authenticated Codex CLI.
+Shows the remaining Codex usage allowance and reset time for both the short
+(normally five-hour) and weekly usage windows. It requires an authenticated
+Codex CLI. For example: `CX:5h 31% reset:15m·7d 89% reset:7d`.
 
 **Schedule `clock_ticker update codex_usage` to keep the cache value current.**
 
