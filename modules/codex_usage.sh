@@ -45,18 +45,34 @@ update__codex_usage() {
 }
 
 codex_usage_status() {
-  local remaining reset_time color="#7fc97f"
+  local short_window short_remaining short_reset
+  local long_window long_remaining long_reset extra
+  local short_color="#7fc97f" long_color="#7fc97f"
 
   [[ -r "$CODEX_USAGE_CACHE" ]] || return 0
-  IFS=$'\t' read -r remaining reset_time <"$CODEX_USAGE_CACHE" || return 1
-  [[ "$remaining" =~ ^[0-9]+$ ]] || return 1
+  IFS=$'\t' read -r short_window short_remaining short_reset \
+    long_window long_remaining long_reset extra <"$CODEX_USAGE_CACHE" || return 1
+  [[ -z "$extra" ]] || return 1
+  [[ "$short_window" =~ ^[0-9]+[mhd]$ ]] || return 1
+  [[ "$long_window" =~ ^[0-9]+[mhd]$ ]] || return 1
+  [[ "$short_remaining" =~ ^[0-9]+$ ]] || return 1
+  [[ "$long_remaining" =~ ^[0-9]+$ ]] || return 1
+  ((short_remaining <= 100 && long_remaining <= 100)) || return 1
+  [[ -n "$short_reset" && -n "$long_reset" ]] || return 1
 
-  if ((remaining <= 10)); then
-    color="#ff5f5f"
-  elif ((remaining <= 25)); then
-    color="#ffd75f"
+  if ((short_remaining <= 10)); then
+    short_color="#ff5f5f"
+  elif ((short_remaining <= 25)); then
+    short_color="#ffd75f"
   fi
 
-  printf '<span foreground="%s">CX:%d%% reset:%s</span>' \
-    "$color" "$remaining" "${reset_time:-unknown}"
+  if ((long_remaining <= 10)); then
+    long_color="#ff5f5f"
+  elif ((long_remaining <= 25)); then
+    long_color="#ffd75f"
+  fi
+
+  printf 'CX:<span foreground="%s">%s %d%% rst %s</span>·<span foreground="%s">%s %d%% rst %s</span>' \
+    "$short_color" "$short_window" "$short_remaining" "$short_reset" \
+    "$long_color" "$long_window" "$long_remaining" "$long_reset"
 }

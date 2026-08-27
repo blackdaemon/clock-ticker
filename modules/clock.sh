@@ -236,4 +236,3 @@ clock_status() {
   printf '<span foreground="%s">  %s  %s%s </span>' "$CLOCK_COLOR" \
     "$(date +'%T')" "$darkness" "$CLOCK_SOLAR_ICON"
 }
-~

@@ -50,6 +50,23 @@ def format_reset_time(timestamp: int) -> str:
     )
 
 
+def format_window_duration(minutes: int) -> str:
+    if minutes <= 0:
+        raise ValueError("Codex returned an invalid usage window duration")
+    if minutes % (24 * 60) == 0:
+        return f"{minutes // (24 * 60)}d"
+    if minutes % 60 == 0:
+        return f"{minutes // 60}h"
+    return f"{minutes}m"
+
+
+def format_window(window: dict) -> tuple[str, int, str]:
+    duration = format_window_duration(window["windowDurationMins"])
+    remaining = max(0, min(100, 100 - round(window["usedPercent"])))
+    resets_at = window.get("resetsAt") or 0
+    return duration, remaining, format_reset_time(resets_at)
+
+
 def request_rate_limits() -> dict:
     codex = find_codex()
 
@@ -113,13 +130,13 @@ def request_rate_limits() -> dict:
 
 def main() -> None:
     rate_limits = request_rate_limits()
-    window = rate_limits.get("primary")
-    if window is None:
-        raise RuntimeError("Codex returned no primary usage window")
+    primary = rate_limits.get("primary")
+    secondary = rate_limits.get("secondary")
+    if primary is None or secondary is None:
+        raise RuntimeError("Codex returned fewer than two usage windows")
 
-    remaining = max(0, min(100, 100 - round(window["usedPercent"])))
-    resets_at = window.get("resetsAt") or 0
-    print(f"{remaining}\t{format_reset_time(resets_at)}")
+    fields = (*format_window(primary), *format_window(secondary))
+    print("\t".join(map(str, fields)))
 
 
 if __name__ == "__main__":
