@@ -137,8 +137,9 @@ update__syncthing() {
     return 1
   }
 
-  # Separately aggregate the remote-device view used by Syncthing's device
-  # panel. This exposes uploads without changing the local status above.
+  # Separately aggregate the connected remote-device view used by Syncthing's
+  # device panel. Disconnected devices cannot be actively syncing, so their
+  # pending items must not keep the activity monitor running indefinitely.
   while IFS= read -r device; do
     completion="$(curl -fsS --config "$curl_config" --get \
       --data-urlencode "device=$device" "$base_url/rest/db/completion")" || {
@@ -163,7 +164,9 @@ update__syncthing() {
     remote_need_bytes=$((remote_need_bytes + completion_bytes))
     # Syncthing's GUI includes pending deletions in "Out of Sync Items".
     remote_need_items=$((remote_need_items + completion_items + completion_deletes))
-  done < <(jq -r '.connections | keys[]' <<<"$connections")
+  done < <(
+    jq -r +      '.connections | to_entries[] | select(.value.connected == true) | .key' +      <<<"$connections"
+  )
 
   if ((remote_global_bytes > 0)); then
     remote_completion_pct="$(awk -v total="$remote_global_bytes" \

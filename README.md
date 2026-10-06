@@ -425,8 +425,10 @@ seconds while Codex is active and every 10 minutes while it is idle.
 ### `syncthing.sh`
 
 Shows device connectivity, synchronization progress and speed, paused devices,
-recent activity, and folder errors. It reads the existing local Syncthing
-configuration and shows `ST:offline` when the service is unreachable. 
+recent activity, and folder errors. Remote progress covers connected devices;
+disconnected devices still affect the connectivity count. It reads the existing
+local Syncthing configuration and shows `ST:offline` when the service is
+unreachable.
 
 **Schedule `clock_ticker update syncthing` regularly to discover new activity; 
 1 minute schedule is enough.**
