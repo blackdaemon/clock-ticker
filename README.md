@@ -395,7 +395,13 @@ very heavy swapping is shown as critical.
 ### `system.sh`
 
 Shows CPU temperature only when it becomes unusually high, with separate
-warning and critical colors.
+warning and critical colors. At the critical threshold it also identifies the
+process reporting the highest CPU utilization. When available, its systemd
+service or scope is included to distinguish interpreted processes such as
+`mdatp/python3`. Python processes without a useful service identity show the
+module or script being run. Packaged scripts include their RPM package name;
+unpackaged scripts below `/opt` or `/var/opt` include an application
+directory.
 
 ### `fedora_status.sh`
 
