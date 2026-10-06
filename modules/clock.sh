@@ -230,7 +230,7 @@ clock_status() {
 
   update_clock_color
   [[ -z "$CLOCK_DARKNESS_MINUTES" ]] ||
-    darkness=" ${CLOCK_DARKNESS_MINUTES}m"$'\u2009' # Thin space
+    darkness=" "$'\u2193'"${CLOCK_DARKNESS_MINUTES}m " # Thin space
   printf '<span foreground="#00CED1">%s</span>' \
     "$(LC_TIME= date +'%a %_d %b %Y W%V')"
   printf '<span foreground="%s">  %s  %s%s </span>' "$CLOCK_COLOR" \
