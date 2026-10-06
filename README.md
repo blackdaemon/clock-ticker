@@ -410,9 +410,11 @@ repository metadata can take time.**
 
 Shows the remaining Codex usage allowance and reset time for both the short
 (normally five-hour) and weekly usage windows. It requires an authenticated
-Codex CLI. For example: `CX:5h 31% reset:15m·7d 89% reset:7d`.
-
-**Schedule `clock_ticker update codex_usage` to keep the cache value current.**
+Codex CLI. Purchased-credit balance is shown at the end when available. For
+example: `CX:5h 31% rst 15m·7d 89% rst 7d·Cr:2489.1`.
+Optionally, an activity icon is added after `CX:` to indicate an ongoing burst
+of Codex work. Clock Ticker refreshes the cache in the background every 30
+seconds while Codex is active and every 10 minutes while it is idle.
 
 ### `syncthing.sh`
 

@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import json
+from decimal import Decimal, InvalidOperation
 from pathlib import Path
 import selectors
 import shutil
@@ -9,7 +10,8 @@ import sys
 import time
 
 import pendulum
-from babel.dates import format_timedelta
+from babel.numbers import format_decimal
+from pendulum import Interval
 
 
 def find_codex() -> str:
@@ -33,20 +35,34 @@ def find_codex() -> str:
     )
 
 
+def format_duration(duration: pendulum.Duration, locale="en"):
+    seconds = abs(duration.total_seconds())
+    sign = "-" if duration.total_seconds() < 0 else ""
+
+    if seconds >= 86_400:
+        days, remainder = divmod(int(seconds), 86_400)
+        hours = remainder // 3_600
+        return f"{sign}{days}d{hours}h"
+
+    if seconds >= 3_600:
+        hours = round(seconds / 3_600, 1)
+        return f"{sign}{format_decimal(hours, locale=locale, decimal_quantization=False)}h"
+
+    minutes = round(seconds / 60)
+    return f"{sign}{format_decimal(minutes, locale=locale)}m"
+
+
 def format_reset_time(timestamp: int) -> str:
     if timestamp <= 0:
         return "unknown"
 
-    reset_time = pendulum.from_timestamp(timestamp)
-    remaining = reset_time - pendulum.now(reset_time.timezone)
+    reset_time: pendulum.DateTime = pendulum.from_timestamp(timestamp)
+    remaining: pendulum.Duration = reset_time - pendulum.now(reset_time.timezone)
     if remaining.total_seconds() < 0:
         remaining = pendulum.duration()
 
-    return format_timedelta(
-        remaining,
-        format="narrow",
-        add_direction=False,
-        threshold=1.0,
+    return format_duration(
+        remaining
     )
 
 
@@ -65,6 +81,21 @@ def format_window(window: dict) -> tuple[str, int, str]:
     remaining = max(0, min(100, 100 - round(window["usedPercent"])))
     resets_at = window.get("resetsAt") or 0
     return duration, remaining, format_reset_time(resets_at)
+
+
+def format_credit_balance(rate_limits: dict) -> str:
+    credits = rate_limits.get("credits")
+    if not isinstance(credits, dict) or not credits.get("hasCredits"):
+        return "none"
+    if credits.get("unlimited"):
+        return "unlimited"
+
+    try:
+        balance = Decimal(str(credits["balance"]))
+    except (InvalidOperation, KeyError):
+        raise ValueError("Codex returned an invalid credit balance") from None
+
+    return format(balance, ".1f")
 
 
 def request_rate_limits() -> dict:
@@ -135,8 +166,12 @@ def main() -> None:
     if primary is None or secondary is None:
         raise RuntimeError("Codex returned fewer than two usage windows")
 
-    fields = (*format_window(primary), *format_window(secondary))
-    print("\t".join(map(str, fields)))
+    fields = (
+        *format_window(primary),
+        *format_window(secondary),
+        format_credit_balance(rate_limits),
+    )
+    print("\t".join(map(str, fields)), end="")
 
 
 if __name__ == "__main__":
