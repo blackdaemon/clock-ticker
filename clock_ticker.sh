@@ -22,6 +22,7 @@ readonly SCRIPT_DIR="$(dirname "$SCRIPT_PATH")"
 
 readonly LIB_DIR="$SCRIPT_DIR/lib"
 readonly MODULES_DIR="$SCRIPT_DIR/modules"
+readonly TESTS_DIR="$SCRIPT_DIR/tests"
 readonly PYTHON="$SCRIPT_DIR/.venv/bin/python"
 readonly BIN_DIR="$HOME/.local/bin"
 

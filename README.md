@@ -503,15 +503,15 @@ Run all development checks with:
 just test
 ```
 
-This delegates to `clock_ticker test`, which runs the static checks and then
-prints the ticker currently published in
+This delegates to `clock_ticker test`, which runs the static checks and Bash
+regression tests, then prints the ticker currently published in
 `$XDG_RUNTIME_DIR/clock-ticker/ticker.txt`. For Pango output it also prints a
 plain-text preview with the tags removed. If the service has not produced the
 file yet, the static checks still succeed and the command reports that no
 ticker output is available. It checks Bash syntax with:
 
 ```bash
-bash -n clock_ticker.sh lib/*.sh modules/*.sh
+bash -n clock_ticker.sh lib/*.sh modules/*.sh tests/*.sh
 ```
 
 Compile-check the Python modules with the managed environment:
@@ -523,7 +523,7 @@ uv run python -m compileall -q modules
 Run ShellCheck with:
 
 ```bash
-shellcheck -S error -x clock_ticker.sh lib/*.sh modules/*.sh
+shellcheck -S error -x clock_ticker.sh lib/*.sh modules/*.sh tests/*.sh
 ```
 
 After modifying the running script or a module, reload it with:

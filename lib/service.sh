@@ -33,9 +33,17 @@ status_service() {
 # Output: checks and ticker preview
 # Returns: failure when a validation or readable ticker operation fails.
 test_project() {
-  bash -n "$SCRIPT_PATH" "$LIB_DIR"/*.sh "$MODULES_DIR"/*.sh || return 1
-  shellcheck -S error -x "$SCRIPT_PATH" "$LIB_DIR"/*.sh "$MODULES_DIR"/*.sh || return 1
+  local test_file
+
+  bash -n "$SCRIPT_PATH" "$LIB_DIR"/*.sh "$MODULES_DIR"/*.sh \
+    "$TESTS_DIR"/*.sh || return 1
+  shellcheck -S error -x "$SCRIPT_PATH" "$LIB_DIR"/*.sh "$MODULES_DIR"/*.sh \
+    "$TESTS_DIR"/*.sh || return 1
   "$PYTHON" -m compileall -q "$MODULES_DIR" || return 1
+  "$PYTHON" -m unittest discover -s "$TESTS_DIR" -p '*_test.py' || return 1
+  for test_file in "$TESTS_DIR"/*_test.sh; do
+    bash "$test_file" || return 1
+  done
 
   if [[ ! -r "$TICKER_FILE" ]]; then
     printf '\nTicker output is not available yet: %s\n' "$TICKER_FILE"
