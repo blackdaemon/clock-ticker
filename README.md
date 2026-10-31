@@ -31,8 +31,8 @@ Clock Ticker runs as a systemd user service, collects a small set of status
 fields, and writes one Pango-formatted line for a consumer display (consumer can be 
 any UI widget able to display text file).
 A configuration file is not required, but selecting only the broadly useful core
-modules gives a quieter first installation without Fedora, Syncthing, Codex,
-or personal integrations.
+modules gives a quieter first installation without Fedora, Syncthing, Claude,
+Codex, or personal integrations.
 
 From the cloned repository, create a minimal configuration and install:
 
@@ -411,6 +411,26 @@ recommended. It prefers `dnf5` and falls back to DNF4's `dnf`; DNF4 requires
 
 **Schedule `clock_ticker update fedora_status` infrequently because refreshing
 repository metadata can take time.**
+
+### `claude_usage.sh`
+
+Shows the remaining Claude usage allowance and reset time for both the
+five-hour session and weekly (all models) usage windows, plus the local reset
+time of the session window. It requires a Claude CLI signed in with a
+subscription. The remaining usage-credit allowance (monthly limit minus credits
+used) is shown at the end when usage credits are enabled, or `∞` when they have
+no limit. For example: `CL:5h 31% rst 15m (03:39)·7d 89% rst 4d3h·Cr:37.5`.
+Optionally, an activity icon is added after `CL:` to indicate an ongoing burst
+of Claude work, detected from session logs under `~/.claude/projects`. Clock
+Ticker refreshes the cache in the background every 30 seconds while Claude is
+active and every 10 minutes while it is idle; a failed refresh waits for the
+same interval before trying again.
+
+The data comes from the `usage_report` message of
+`claude -p /usage --output-format stream-json --verbose`, which is a local
+command that uses no tokens. This output is not a documented interface, so a CLI
+update may change it; the module then reports an error on stderr and keeps the
+previous cache.
 
 ### `codex_usage.sh`
 

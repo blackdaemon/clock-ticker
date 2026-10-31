@@ -384,7 +384,7 @@ ticker_loop() {
   call_if_available start_dnd_monitor || {
     printf 'Unable to monitor GNOME DND state.\n' >&2
   }
-  trap 'call_if_available stop_codex_usage_update; call_if_available stop_syncthing_monitor; call_if_available stop_dnd_monitor' EXIT
+  trap 'call_if_available stop_codex_usage_update; call_if_available stop_claude_usage_update; call_if_available stop_syncthing_monitor; call_if_available stop_dnd_monitor' EXIT
   trap 'exit 0' INT TERM
 
   printf 'Running main ticker loop...\n' >&2
@@ -416,6 +416,9 @@ ticker_loop() {
 
     call_if_available maybe_update_codex_usage
     append_ticker ticker "$(render_text "" "$(call_if_available codex_usage_status)")"
+
+    call_if_available maybe_update_claude_usage
+    append_ticker ticker "$(render_text "" "$(call_if_available claude_usage_status)")"
 
     append_ticker ticker "$(render_text "" "$(call_if_available fedora_status)")"
 #    append_ticker ticker "$(call_if_available configuration_drift_status)"
