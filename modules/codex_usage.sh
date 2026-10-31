@@ -137,8 +137,10 @@ stop_codex_usage_update() {
 # Render the cached Codex usage as trusted Pango markup.
 #
 # Remaining percentages at or below 25 and 10 use warning and critical colors,
-# respectively. A work-in-progress cache flag adds the activity icon. A
-# purchased-credit balance, when present, is appended after both usage windows.
+# respectively. A work-in-progress cache flag adds the activity icon. The
+# secondary window is rendered only when the current plan has one; its cache
+# fields are "none" otherwise. A purchased-credit balance, when present, is
+# appended after the usage windows.
 #
 # Arguments: none.
 # Output: one status fragment on standard output, or nothing when the cache is
@@ -146,17 +148,17 @@ stop_codex_usage_update() {
 # Returns: zero for a missing or valid cache; nonzero when the cache cannot be
 # read completely or contains malformed fields.
 codex_usage_status() {
-  local short_window short_remaining short_reset
-  local long_window long_remaining long_reset credits extra
-  local wip_color="#ffd75f" short_color="#7fc97f" long_color="#7fc97f"
+  local primary_window primary_remaining primary_reset
+  local secondary_window secondary_remaining secondary_reset credits extra
+  local wip_color="#ffd75f" primary_color="#7fc97f" secondary_color="#7fc97f"
   local work_in_progress work_in_progress_icon
 
   work_in_progress_icon=""
 
   [[ -r "$CODEX_USAGE_CACHE" ]] || return 0
-  IFS=$'\t' read -r short_window short_remaining short_reset \
-    long_window long_remaining long_reset credits work_in_progress extra \
-    <"$CODEX_USAGE_CACHE" || return 1
+  IFS=$'\t' read -r primary_window primary_remaining primary_reset \
+    secondary_window secondary_remaining secondary_reset credits \
+    work_in_progress extra <"$CODEX_USAGE_CACHE" || return 1
 
   # Accept the previous cache format until the background updater replaces it.
   if [[ "$credits" == true || "$credits" == false ]]; then
@@ -166,35 +168,47 @@ codex_usage_status() {
   fi
 
   [[ -z "$extra" ]] || return 1
-  [[ "$short_window" =~ ^[0-9]+[mhd]$ ]] || return 1
-  [[ "$long_window" =~ ^[0-9]+[mhd]$ ]] || return 1
-  [[ "$short_remaining" =~ ^[0-9]+$ ]] || return 1
-  [[ "$long_remaining" =~ ^[0-9]+$ ]] || return 1
-  ((short_remaining <= 100 && long_remaining <= 100)) || return 1
-  [[ -n "$short_reset" && -n "$long_reset" ]] || return 1
+  [[ "$primary_window" =~ ^[0-9]+[mhd]$ ]] || return 1
+  [[ "$primary_remaining" =~ ^[0-9]+$ ]] || return 1
+  ((primary_remaining <= 100)) || return 1
+  [[ -n "$primary_reset" ]] || return 1
+  if [[ "$secondary_window" == none ]]; then
+    [[ "$secondary_remaining" == none && "$secondary_reset" == none ]] ||
+      return 1
+  else
+    [[ "$secondary_window" =~ ^[0-9]+[mhd]$ ]] || return 1
+    [[ "$secondary_remaining" =~ ^[0-9]+$ ]] || return 1
+    ((secondary_remaining <= 100)) || return 1
+    [[ -n "$secondary_reset" ]] || return 1
+
+    if ((secondary_remaining <= 10)); then
+      secondary_color="#ff5f5f"
+    elif ((secondary_remaining <= 25)); then
+      secondary_color="#ffd75f"
+    fi
+  fi
   [[ "$credits" == none || "$credits" == unlimited ||
      "$credits" =~ ^-?[0-9]+([.][0-9]+)?$ ]] || return 1
 
-  if ((short_remaining <= 10)); then
-    short_color="#ff5f5f"
-  elif ((short_remaining <= 25)); then
-    short_color="#ffd75f"
-  fi
-
-  if ((long_remaining <= 10)); then
-    long_color="#ff5f5f"
-  elif ((long_remaining <= 25)); then
-    long_color="#ffd75f"
+  if ((primary_remaining <= 10)); then
+    primary_color="#ff5f5f"
+  elif ((primary_remaining <= 25)); then
+    primary_color="#ffd75f"
   fi
 
   if [ "$work_in_progress" == "true" ]; then
     work_in_progress_icon=""$'\u2301'" "
   fi
 
-  printf 'CX:<span foreground="%s">%s</span><span foreground="%s">%s %d%% rst %s</span>·<span foreground="%s">%s %d%% rst %s</span>' \
+  printf 'CX:<span foreground="%s">%s</span><span foreground="%s">%s %d%% rst %s</span>' \
     "$wip_color" "$work_in_progress_icon" \
-    "$short_color" "$short_window" "$short_remaining" "$short_reset" \
-    "$long_color" "$long_window" "$long_remaining" "$long_reset"
+    "$primary_color" "$primary_window" "$primary_remaining" "$primary_reset"
+
+  if [[ "$secondary_window" != none ]]; then
+    printf '·<span foreground="%s">%s %d%% rst %s</span>' \
+      "$secondary_color" "$secondary_window" "$secondary_remaining" \
+      "$secondary_reset"
+  fi
 
   case "$credits" in
     unlimited)

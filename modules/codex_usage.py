@@ -13,6 +13,10 @@ import pendulum
 from babel.numbers import format_decimal
 from pendulum import Interval
 
+# Cache fields of an absent window. Bash's read collapses empty tab-separated
+# fields, so a placeholder is needed to keep the later fields in position.
+NO_WINDOW = ("none", "none", "none")
+
 
 def find_codex() -> str:
     codex = shutil.which("codex")
@@ -52,18 +56,19 @@ def format_duration(duration: pendulum.Duration, locale="en"):
     return f"{sign}{format_decimal(minutes, locale=locale)}m"
 
 
-def format_reset_time(timestamp: int) -> str:
+def format_reset_time(timestamp: int, show_time: bool) -> str:
     if timestamp <= 0:
         return "unknown"
 
-    reset_time: pendulum.DateTime = pendulum.from_timestamp(timestamp)
+    reset_time: pendulum.DateTime = pendulum.from_timestamp(timestamp, tz="UTC")
     remaining: pendulum.Duration = reset_time - pendulum.now(reset_time.timezone)
     if remaining.total_seconds() < 0:
         remaining = pendulum.duration()
 
-    return format_duration(
-        remaining
-    )
+    if show_time:
+        return f"{format_duration(remaining)} ({reset_time.in_timezone("local").format("HH:mm")})"
+    else:
+        return format_duration(remaining)
 
 
 def format_window_duration(minutes: int) -> str:
@@ -77,10 +82,31 @@ def format_window_duration(minutes: int) -> str:
 
 
 def format_window(window: dict) -> tuple[str, int, str]:
-    duration = format_window_duration(window["windowDurationMins"])
+    minutes = window["windowDurationMins"]
+    duration = format_window_duration(minutes)
     remaining = max(0, min(100, 100 - round(window["usedPercent"])))
     resets_at = window.get("resetsAt") or 0
-    return duration, remaining, format_reset_time(resets_at)
+    # A local clock time only identifies the reset within a day.
+    show_time = minutes < 24 * 60
+    return duration, remaining, format_reset_time(resets_at, show_time=show_time)
+
+
+def format_usage_fields(rate_limits: dict) -> tuple:
+    # The plan decides which windows exist: Plus has a five-hour primary and a
+    # weekly secondary window, while Free has only a 30-day primary window.
+    windows = [
+        format_window(window)
+        for window in (rate_limits.get("primary"), rate_limits.get("secondary"))
+        if window is not None
+    ]
+    if not windows:
+        raise RuntimeError("Codex returned no usage windows")
+
+    return (
+        *windows[0],
+        *(windows[1] if len(windows) > 1 else NO_WINDOW),
+        format_credit_balance(rate_limits),
+    )
 
 
 def format_credit_balance(rate_limits: dict) -> str:
@@ -160,17 +186,7 @@ def request_rate_limits() -> dict:
 
 
 def main() -> None:
-    rate_limits = request_rate_limits()
-    primary = rate_limits.get("primary")
-    secondary = rate_limits.get("secondary")
-    if primary is None or secondary is None:
-        raise RuntimeError("Codex returned fewer than two usage windows")
-
-    fields = (
-        *format_window(primary),
-        *format_window(secondary),
-        format_credit_balance(rate_limits),
-    )
+    fields = format_usage_fields(request_rate_limits())
     print("\t".join(map(str, fields)), end="")
 
 

@@ -434,10 +434,16 @@ previous cache.
 
 ### `codex_usage.sh`
 
-Shows the remaining Codex usage allowance and reset time for both the short
-(normally five-hour) and weekly usage windows. It requires an authenticated
-Codex CLI. Purchased-credit balance is shown at the end when available. For
-example: `CX:5h 31% rst 15m·7d 89% rst 7d·Cr:2489.1`.
+Not called by the main ticker loop; re-enable it by uncommenting its two lines
+in `ticker_loop`.
+
+Shows the remaining Codex usage allowance and reset time for each usage window
+of the current plan, detected on every refresh. It requires an authenticated
+Codex CLI. Plans with short and weekly windows, such as Plus, show both, with
+the local reset time for a window shorter than a day. The Free plan has a single
+30-day window. Purchased-credit balance is shown at the end when available. For
+example: `CX:5h 31% rst 15m (03:39)·7d 89% rst 7d·Cr:2489.1` on Plus, or
+`CX:30d 100% rst 29d23h` on Free.
 Optionally, an activity icon is added after `CX:` to indicate an ongoing burst
 of Codex work. Clock Ticker refreshes the cache in the background every 30
 seconds while Codex is active and every 10 minutes while it is idle.

@@ -39,3 +39,41 @@ if codex_usage_status >/dev/null; then
   printf 'Malformed credit balance was accepted.\n' >&2
   exit 1
 fi
+
+# The Free plan has a single usage window.
+printf '30d\t80\t29d23h\tnone\tnone\tnone\tnone\tfalse\n' \
+  >"$CODEX_USAGE_CACHE"
+status="$(codex_usage_status)"
+[[ "$status" == *'30d 80% rst 29d23h</span>' ]] || {
+  printf 'Single Codex window rendered incorrectly: %s\n' "$status" >&2
+  exit 1
+}
+
+printf '30d\t80\t29d23h\tnone\tnone\tnone\t12.5\ttrue\n' \
+  >"$CODEX_USAGE_CACHE"
+status="$(codex_usage_status)"
+[[ "$status" == *'⌁ '*'30d 80% rst 29d23h</span>·Cr:12.5' ]] || {
+  printf 'Single Codex window with credits rendered incorrectly: %s\n' \
+    "$status" >&2
+  exit 1
+}
+
+printf '30d\t80\t29d23h\tnone\t89\t7d\tnone\tfalse\n' >"$CODEX_USAGE_CACHE"
+if codex_usage_status >/dev/null; then
+  printf 'Partially absent Codex window was accepted.\n' >&2
+  exit 1
+fi
+
+printf 'none\tnone\tnone\tnone\tnone\tnone\tnone\tfalse\n' \
+  >"$CODEX_USAGE_CACHE"
+if codex_usage_status >/dev/null; then
+  printf 'Codex cache without usage windows was accepted.\n' >&2
+  exit 1
+fi
+
+rm -f -- "$CODEX_USAGE_CACHE"
+status="$(codex_usage_status)"
+[[ -z "$status" ]] || {
+  printf 'Missing Codex cache rendered output: %s\n' "$status" >&2
+  exit 1
+}

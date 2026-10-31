@@ -414,8 +414,8 @@ ticker_loop() {
     call_if_available maintain_syncthing_monitor
     append_ticker ticker "$(render_text "" "$(call_if_available syncthing_status)")"
 
-    call_if_available maybe_update_codex_usage
-    append_ticker ticker "$(render_text "" "$(call_if_available codex_usage_status)")"
+    #call_if_available maybe_update_codex_usage
+    #append_ticker ticker "$(render_text "" "$(call_if_available codex_usage_status)")"
 
     call_if_available maybe_update_claude_usage
     append_ticker ticker "$(render_text "" "$(call_if_available claude_usage_status)")"
